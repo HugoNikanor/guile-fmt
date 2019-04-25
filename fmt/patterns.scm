@@ -1,6 +1,6 @@
 (define-module (fmt patterns)
   #:use-module (ice-9 peg)
-  #:export (infmt->tree))
+  #:export (infmt->tree parse-strings-in-tree))
 
 ;; A single upper or lower case letter
 (define-peg-pattern letter body
@@ -17,8 +17,8 @@
 
 ;; A scheme symbol
 (define-peg-pattern symbol body
-  (and (or letter symbol-extra-chars)
-       (* (or letter symbol-extra-chars digit))))
+  (* (or (followed-by "}")
+         peg-any)))
 
 ;; The pattern ${symbol}, used for finding symbols to replace.
 (define-peg-pattern replace-pattern all
@@ -43,3 +43,12 @@ the second element being the string."
    '(text-part replace-pattern)
    (peg:tree
     (match-pattern fmt-pattern str))))
+
+(define (parse-strings-in-tree tree)
+  (map (lambda (node)
+         (let ((type (car node))
+               (contents (cadr node)))
+           (list type (if (eqv? type 'replace-pattern)
+                          (call-with-input-string contents read)
+                          contents))))
+       tree))

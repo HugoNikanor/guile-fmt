@@ -16,6 +16,9 @@
 ;;; My definition of how a symbol looks is also rather limited.
 ;;; Currently I only allow "simple" ASCII characters.
 ;;; See (fmt patterns) exact implementation.
+;;;
+;;; TODO
+;;; - (fmt "string without formatting rules") fails
 
 (define-module (fmt)
   #:use-module (srfi srfi-1)
@@ -28,18 +31,18 @@
 format string and all embedded symbols as symbols after."
   (receive (str symbs)
       (car+cdr
-       (let ((tree (infmt->tree str)))
+       (let ((tree (parse-strings-in-tree (infmt->tree str))))
          (fold (lambda (pair done)
                  (receive (donestr symbs) (car+cdr done) 
                    (let ((type (car pair))
-                         (str (cadr pair))) 
+                         (body (cadr pair)))
                      (case type
                        ((text-part)
-                        (cons (string-append donestr str)
+                        (cons (string-append donestr body)
                               symbs))
                        ((replace-pattern)
                         (cons (string-append donestr "~a")
-                              (cons (string->symbol str)
+                              (cons body
                                     symbs)))))))
                (cons "" '())
                tree)))
